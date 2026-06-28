@@ -1165,10 +1165,6 @@ function renderTrainingDetail() {
           </div>
         </div>
 
-        <div style="display:flex;gap:12px;margin-bottom:24px">
-          <button class="btn btn-outline" onclick="navigate('assessment')">📝 Iniciar Avaliação</button>
-          <button class="btn btn-ghost">${icons.download} Material PDF</button>
-        </div>
 
         <div class="card" style="margin-bottom:20px">
           <div class="tabs">
