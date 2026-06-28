@@ -1482,77 +1482,133 @@ function renderChatbot() {
 
 // ---- ADMIN DASHBOARD ----
 function renderAdminDashboard() {
-  const stats = MOCK.stats.admin.map((s, i) => `
-    <div class="stat-card animate-fade-in stagger-${i + 1}">
-      <div class="stat-card-header">
-        <div class="stat-card-icon ${s.color}">${s.icon}</div>
-        <div class="stat-card-trend up">${icons.arrowUp} ${s.trend}</div>
-      </div>
-      <div class="stat-card-value">${s.value}</div>
-      <div class="stat-card-label">${s.label}</div>
-    </div>
-  `).join('');
+  const totalCadastrados = MOCK.adminUsers.length;
+  const fizeram = MOCK.adminUsers.filter(u => u.status === 'active' && u.trainings >= 1).length;
+  const naoFizeram = totalCadastrados - fizeram;
+  const pctFizeram = Math.round((fizeram / totalCadastrados) * 100);
+  const pctNaoFizeram = 100 - pctFizeram;
 
-  const chartBars = MOCK.chartData.monthly.map((v, i) => `
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-      <div style="height:${v}%;width:100%;background:${i === new Date().getMonth() ? 'var(--accent-success)' : 'var(--accent-success-light)'};border-radius:4px 4px 0 0;opacity:${i === new Date().getMonth() ? '1' : '0.7'}"></div>
-      <span style="font-size:10px;color:var(--text-tertiary)">${MOCK.chartData.labels[i]}</span>
-    </div>
-  `).join('');
-
-  const recentUsers = MOCK.adminUsers.slice(0, 5).map(u => `
-    <div class="flex items-center gap-3" style="padding:10px 0;border-bottom:1px solid var(--border-secondary)">
-      <div class="sidebar-avatar" style="width:32px;height:32px;font-size:11px">${u.name.split(' ').map(n => n[0]).join('')}</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:500">${u.name}</div>
-        <div style="font-size:11px;color:var(--text-tertiary)">${u.role}</div>
-      </div>
-      <span class="badge ${u.status === 'active' ? 'badge-success' : u.status === 'inactive' ? 'badge-neutral' : 'badge-warning'}">${u.status === 'active' ? 'Ativo' : u.status === 'inactive' ? 'Inativo' : 'Pendente'}</span>
-    </div>
-  `).join('');
+  const userRows = MOCK.adminUsers.map(u => {
+    const fez = u.status === 'active' && u.trainings >= 1;
+    return `
+      <tr>
+        <td>
+          <div class="flex items-center gap-3">
+            <div class="sidebar-avatar" style="width:32px;height:32px;font-size:11px">${u.name.split(' ').map(n => n[0]).join('')}</div>
+            <div>
+              <div style="font-weight:500">${u.name}</div>
+              <div style="font-size:11px;color:var(--text-tertiary)">${u.email}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge badge-neutral">${u.role}</span></td>
+        <td><span class="badge ${fez ? 'badge-success' : 'badge-danger'}">${fez ? '✓ Concluído' : '✗ Pendente'}</span></td>
+      </tr>
+    `;
+  }).join('');
 
   return `
     <div class="page-header">
       <h1 class="page-title">Dashboard Administrativo</h1>
-      <p class="page-description">Visão geral do sistema de treinamentos</p>
+      <p class="page-description">Visão geral do treinamento NR-6 — Equipamentos de Proteção Individual</p>
     </div>
 
-    <div class="grid-4" style="margin-bottom:28px">${stats}</div>
-
-    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:28px">
-      <div class="card animate-fade-in stagger-5">
-        <div class="flex justify-between items-center" style="margin-bottom:20px">
-          <h3 style="font-size:15px;font-weight:600">Taxa de Aprovação Mensal</h3>
-          <span class="badge badge-success">+3% vs mês ant.</span>
+    <div class="grid-3" style="margin-bottom:28px">
+      <div class="stat-card animate-fade-in stagger-1">
+        <div class="stat-card-header">
+          <div class="stat-card-icon purple">👥</div>
         </div>
-        <div style="height:200px;display:flex;align-items:flex-end;gap:6px;padding-top:10px">${chartBars}</div>
+        <div class="stat-card-value">${totalCadastrados}</div>
+        <div class="stat-card-label">Pessoas Cadastradas</div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px">Total de colaboradores na plataforma</div>
       </div>
-
-      <div class="card animate-fade-in stagger-6">
-        <div class="flex justify-between items-center" style="margin-bottom:12px">
-          <h3 style="font-size:15px;font-weight:600">Distribuição</h3>
+      <div class="stat-card animate-fade-in stagger-2">
+        <div class="stat-card-header">
+          <div class="stat-card-icon green">✅</div>
+          <div class="stat-card-trend up">${icons.arrowUp} ${pctFizeram}%</div>
         </div>
-        <div class="donut-chart" style="margin-bottom:16px">
-          <div class="donut-chart-inner">
-            <div class="donut-chart-value">248</div>
-            <div class="donut-chart-label">usuários</div>
+        <div class="stat-card-value">${fizeram}</div>
+        <div class="stat-card-label">Fizeram o Treinamento</div>
+        <div style="margin-top:8px">
+          <div class="progress-bar" style="height:6px">
+            <div class="progress-bar-fill green" style="width:${pctFizeram}%"></div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div class="flex items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:var(--accent-primary)"></div><span style="font-size:12px;flex:1">Ativos (65%)</span></div>
-          <div class="flex items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:var(--accent-success)"></div><span style="font-size:12px;flex:1">Concluíram (17%)</span></div>
-          <div class="flex items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:var(--accent-warning)"></div><span style="font-size:12px;flex:1">Pendentes (11%)</span></div>
-          <div class="flex items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:var(--bg-tertiary)"></div><span style="font-size:12px;flex:1">Inativos (7%)</span></div>
+      </div>
+      <div class="stat-card animate-fade-in stagger-3">
+        <div class="stat-card-header">
+          <div class="stat-card-icon red">⏳</div>
+          <div class="stat-card-trend down" style="color:var(--accent-danger)">${pctNaoFizeram}% pendente</div>
+        </div>
+        <div class="stat-card-value">${naoFizeram}</div>
+        <div class="stat-card-label">Ainda Não Fizeram</div>
+        <div style="margin-top:8px">
+          <div class="progress-bar" style="height:6px">
+            <div class="progress-bar-fill red" style="width:${pctNaoFizeram}%"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="card animate-fade-in">
-      <div class="flex justify-between items-center" style="margin-bottom:12px">
-        <h3 style="font-size:15px;font-weight:600">Usuários Recentes</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
+      <div class="card animate-fade-in stagger-4" style="text-align:center;padding:32px">
+        <div style="position:relative;width:180px;height:180px;margin:0 auto 20px">
+          <svg viewBox="0 0 36 36" style="width:180px;height:180px;transform:rotate(-90deg)">
+            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--bg-tertiary)" stroke-width="3"/>
+            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--accent-success)" stroke-width="3" stroke-dasharray="${pctFizeram}, 100" stroke-linecap="round"/>
+          </svg>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+            <div style="font-size:32px;font-weight:800;color:var(--accent-success)">${pctFizeram}%</div>
+            <div style="font-size:11px;color:var(--text-tertiary)">concluíram</div>
+          </div>
+        </div>
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Taxa de Conclusão</h3>
+        <div style="display:flex;justify-content:center;gap:24px">
+          <div class="flex items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:var(--accent-success)"></div><span style="font-size:12px">Concluíram (${fizeram})</span></div>
+          <div class="flex items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:var(--bg-tertiary)"></div><span style="font-size:12px">Pendentes (${naoFizeram})</span></div>
+        </div>
+      </div>
+
+      <div class="card animate-fade-in stagger-5">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:16px">Resumo do Treinamento</h3>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="flex justify-between items-center" style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md)">
+            <div style="font-size:13px;color:var(--text-secondary)">Treinamento</div>
+            <div style="font-size:13px;font-weight:600">NR-6 — EPI</div>
+          </div>
+          <div class="flex justify-between items-center" style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md)">
+            <div style="font-size:13px;color:var(--text-secondary)">Carga Horária</div>
+            <div style="font-size:13px;font-weight:600">3h 00min</div>
+          </div>
+          <div class="flex justify-between items-center" style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md)">
+            <div style="font-size:13px;color:var(--text-secondary)">Meta de Aprovação</div>
+            <div style="font-size:13px;font-weight:600;color:var(--jde-gold)">80%</div>
+          </div>
+          <div class="flex justify-between items-center" style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md)">
+            <div style="font-size:13px;color:var(--text-secondary)">Prazo Final</div>
+            <div style="font-size:13px;font-weight:600">15/07/2026</div>
+          </div>
+          <div class="flex justify-between items-center" style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-md)">
+            <div style="font-size:13px;color:var(--text-secondary)">Certificados Emitidos</div>
+            <div style="font-size:13px;font-weight:600">${fizeram}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card animate-fade-in stagger-6">
+      <div class="flex justify-between items-center" style="margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:600">Status por Colaborador</h3>
         <button class="btn btn-ghost btn-sm" onclick="navigate('admin-users')">Ver todos →</button>
       </div>
-      ${recentUsers}
+      <div class="table-wrapper" style="border:none">
+        <table class="table">
+          <thead>
+            <tr><th>Colaborador</th><th>Função</th><th>Status NR-6</th></tr>
+          </thead>
+          <tbody>${userRows}</tbody>
+        </table>
+      </div>
     </div>
   `;
 }
