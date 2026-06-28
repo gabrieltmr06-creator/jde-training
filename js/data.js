@@ -210,5 +210,9 @@ const MOCK = {
   chartData: {
     monthly: [45, 62, 78, 55, 89, 73, 92, 68, 85, 95, 72, 88],
     labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-  }
+  },
+  supervisorMessages: [
+    { id: 1, from: 'Ana Souza (Supervisora)', to: 'Gabriel Melo', date: '27/06/2026 09:15', subject: 'Treinamento NR-6 pendente', body: 'Olá Gabriel, verificamos que o seu treinamento de NR-6 — Equipamentos de Proteção Individual ainda não foi concluído. O prazo final é 15/07/2026. Por favor, conclua o quanto antes. Qualquer dúvida estou à disposição.', read: false },
+    { id: 2, from: 'Ana Souza (Supervisora)', to: 'Gabriel Melo', date: '25/06/2026 14:30', subject: 'Bem-vindo à plataforma de treinamentos', body: 'Olá Gabriel, seja bem-vindo à plataforma JDE Peet\'s Training! Você foi matriculado no treinamento obrigatório de NR-6. Acesse a plataforma e conclua dentro do prazo. Bom treinamento!', read: true }
+  ]
 };

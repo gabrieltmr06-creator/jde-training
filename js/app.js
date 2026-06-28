@@ -609,6 +609,8 @@ const studentNav = [
   { id: 'trainings', label: 'Treinamentos', icon: '📚', badge: '1' },
   { id: 'certificates', label: 'Certificados', icon: '🏆' },
   { id: 'chatbot', label: 'Chat IA', icon: '🤖' },
+  { section: 'Comunicação' },
+  { id: 'supervision', label: 'Supervisão', icon: '📩' },
 ];
 
 const adminNav = [
@@ -624,6 +626,7 @@ const adminNav = [
   { id: 'admin-attendance', label: 'Lista de Presença', icon: '📋' },
   { section: 'Sistema' },
   { id: 'admin-lgpd', label: 'LGPD', icon: '🔒' },
+  { id: 'admin-ai', label: 'Assistente Admin', icon: '🤖' },
 ];
 
 // ---- Router ----
@@ -806,8 +809,10 @@ function getPageTitle() {
     'admin-reports': 'Relatórios',
     'admin-attendance': 'Lista de Presença',
     'admin-lgpd': 'Configurações LGPD',
+    'admin-ai': 'Assistente Administrativo',
+    'supervision': 'Supervisão',
   };
-  return titles[currentPage] || 'Dashboard';
+  return titles[currentPage] || 'Treinamentos';
 }
 
 function renderTopbar() {
@@ -851,8 +856,10 @@ function renderPage() {
     'admin-reports': renderAdminReports,
     'admin-attendance': renderAttendance,
     'admin-lgpd': renderAdminLGPD,
+    'admin-ai': renderAdminAI,
+    'supervision': renderSupervision,
   };
-  return (pages[currentPage] || renderDashboard)();
+  return (pages[currentPage] || renderTrainings)();
 }
 
 function bindAppEvents() {
@@ -906,6 +913,11 @@ function bindPageEvents() {
       const input = document.getElementById('chatInput');
       if (input) { input.value = el.textContent; sendChatMessage(); }
     });
+  });
+
+  // Admin AI chat
+  document.getElementById('adminChatInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminChat(); }
   });
 }
 
@@ -2092,6 +2104,269 @@ function renderAdminLGPD() {
         </table>
       </div>
     </div>
+  `;
+}
+
+// ---- ADMIN AI ASSISTANT ----
+const adminAiKnowledge = [
+  {
+    keywords: ['quem não fez', 'quem nao fez', 'pendente', 'falta fazer', 'não fizeram', 'nao fizeram', 'quem falta'],
+    answer: () => {
+      const pendentes = MOCK.adminUsers.filter(u => u.status !== 'active' || u.trainings < 1);
+      if (pendentes.length === 0) return 'Todos os colaboradores já concluíram o treinamento NR-6! 🎉';
+      const lista = pendentes.map(u => `• ${u.name} (${u.role}) — ${u.email}`).join('\n');
+      return `Os seguintes colaboradores ainda NÃO concluíram o treinamento NR-6:\n\n${lista}\n\nTotal: ${pendentes.length} pendente(s). Deseja enviar uma notificação para eles?`;
+    }
+  },
+  {
+    keywords: ['quem fez', 'quem concluiu', 'concluíram', 'concluiram', 'fizeram', 'aprovado'],
+    answer: () => {
+      const feitos = MOCK.adminUsers.filter(u => u.status === 'active' && u.trainings >= 1);
+      const lista = feitos.map(u => `• ${u.name} (${u.role})`).join('\n');
+      return `Colaboradores que JÁ concluíram o NR-6:\n\n${lista}\n\nTotal: ${feitos.length} de ${MOCK.adminUsers.length} (${Math.round(feitos.length/MOCK.adminUsers.length*100)}%)`;
+    }
+  },
+  {
+    keywords: ['quantos', 'quantas', 'total', 'cadastrados', 'cadastradas', 'número', 'numero'],
+    answer: () => {
+      const total = MOCK.adminUsers.length;
+      const feitos = MOCK.adminUsers.filter(u => u.status === 'active' && u.trainings >= 1).length;
+      const pendentes = total - feitos;
+      return `Resumo do treinamento NR-6:\n\n👥 Total cadastrados: ${total}\n✅ Concluíram: ${feitos} (${Math.round(feitos/total*100)}%)\n⏳ Pendentes: ${pendentes} (${Math.round(pendentes/total*100)}%)\n📅 Prazo final: 15/07/2026`;
+    }
+  },
+  {
+    keywords: ['enviar mensagem', 'notificar', 'notificação', 'notificacao', 'avisar', 'lembrete', 'cobrar', 'mandar mensagem'],
+    answer: 'Para enviar uma mensagem a um colaborador:\n\n1. Use o formulário abaixo "Enviar Mensagem"\n2. Selecione o colaborador destinatário\n3. Escreva o assunto e a mensagem\n4. Clique em "Enviar"\n\nA mensagem aparecerá na aba "Supervisão" do colaborador. Você também pode usar os botões rápidos para enviar lembretes automáticos sobre treinamentos pendentes.'
+  },
+  {
+    keywords: ['relatório', 'relatorio', 'exportar', 'csv', 'pdf', 'lista'],
+    answer: () => {
+      const total = MOCK.adminUsers.length;
+      const feitos = MOCK.adminUsers.filter(u => u.status === 'active' && u.trainings >= 1).length;
+      return `Relatório disponível:\n\n📊 Taxa de conclusão: ${Math.round(feitos/total*100)}%\n📋 Lista de presença: ${MOCK.attendance.length} registros\n🏆 Certificados emitidos: ${feitos}\n\nPara exportar, acesse as páginas "Relatórios" ou "Lista de Presença" no menu lateral e clique em "Exportar CSV" ou "Exportar PDF".`;
+    }
+  },
+  {
+    keywords: ['prazo', 'data', 'vencimento', 'quando', 'deadline'],
+    answer: 'Prazos do treinamento NR-6:\n\n📅 Início das matrículas: 15/06/2026\n📅 Prazo final: 15/07/2026\n⏰ Dias restantes: 17 dias\n\nColaboradores que não concluírem dentro do prazo ficarão com status "Não Conforme" e serão notificados automaticamente.'
+  },
+  {
+    keywords: ['olá', 'ola', 'oi', 'bom dia', 'boa tarde', 'boa noite', 'ajuda', 'help'],
+    answer: 'Olá! Sou o assistente administrativo da JDE Peet\'s Training. Posso ajudar com:\n\n• "Quem não fez o treinamento?" — lista de pendentes\n• "Quantos concluíram?" — resumo geral\n• "Enviar mensagem" — notificar colaboradores\n• "Relatório" — dados de conclusão\n• "Prazo" — datas e deadlines\n\nTambém posso enviar lembretes automáticos para quem está com treinamento pendente.'
+  },
+  {
+    keywords: ['lembrete automático', 'lembrete automatico', 'enviar para todos', 'cobrar todos', 'notificar pendentes'],
+    answer: () => {
+      const pendentes = MOCK.adminUsers.filter(u => u.status !== 'active' || u.trainings < 1);
+      if (pendentes.length === 0) return 'Não há colaboradores pendentes! Todos já concluíram o treinamento. 🎉';
+      const nomes = pendentes.map(u => u.name).join(', ');
+      MOCK.supervisorMessages.unshift({
+        id: Date.now(),
+        from: 'Ana Souza (Supervisora)',
+        to: 'Todos pendentes',
+        date: new Date().toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+        subject: 'Lembrete: Treinamento NR-6 pendente',
+        body: `Prezado(a) colaborador(a), identificamos que o treinamento NR-6 — Equipamentos de Proteção Individual ainda não foi concluído. O prazo final é 15/07/2026. Por favor, acesse a plataforma e conclua o treinamento o quanto antes. Em caso de dúvidas, entre em contato com a supervisão.`,
+        read: false
+      });
+      return `✅ Lembrete enviado com sucesso para ${pendentes.length} colaborador(es) pendente(s):\n\n${nomes}\n\nA mensagem aparecerá na aba "Supervisão" de cada colaborador.`;
+    }
+  }
+];
+
+function processAdminAI(userMessage) {
+  const msg = userMessage.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  let bestMatch = null;
+  let bestScore = 0;
+  for (const entry of adminAiKnowledge) {
+    let score = 0;
+    let matchCount = 0;
+    for (const kw of entry.keywords) {
+      const kwNorm = kw.normalize('NFD').replace(/[̀-ͯ]/g, '');
+      if (msg.includes(kwNorm)) { score += kwNorm.length + 3; matchCount++; }
+    }
+    if (matchCount > 1) score *= 1.5;
+    if (score > bestScore) { bestScore = score; bestMatch = entry; }
+  }
+  if (bestMatch && bestScore >= 2) {
+    return typeof bestMatch.answer === 'function' ? bestMatch.answer() : bestMatch.answer;
+  }
+  return 'Posso ajudar com a gestão dos treinamentos. Tente perguntar:\n\n• "Quem não fez o treinamento?"\n• "Quantos concluíram?"\n• "Enviar lembrete para pendentes"\n• "Relatório de conclusão"\n• "Qual o prazo?"';
+}
+
+function sendAdminChat() {
+  const input = document.getElementById('adminChatInput');
+  const container = document.getElementById('adminChatMessages');
+  if (!input || !container || !input.value.trim()) return;
+  const userMsg = input.value.trim();
+  input.value = '';
+  container.innerHTML += `
+    <div class="chat-message user animate-fade-in-up">
+      <div class="chat-message-avatar">AS</div>
+      <div class="chat-message-bubble">${userMsg}</div>
+    </div>`;
+  container.scrollTop = container.scrollHeight;
+  const typingId = 'admintyping-' + Date.now();
+  container.innerHTML += `
+    <div class="chat-message bot animate-fade-in-up" id="${typingId}">
+      <div class="chat-message-avatar">🤖</div>
+      <div class="chat-message-bubble" style="display:flex;align-items:center;gap:6px">
+        <span style="animation:pulse 1s infinite">●</span>
+        <span style="animation:pulse 1s infinite 0.2s">●</span>
+        <span style="animation:pulse 1s infinite 0.4s">●</span>
+      </div>
+    </div>`;
+  container.scrollTop = container.scrollHeight;
+  setTimeout(() => {
+    const response = processAdminAI(userMsg);
+    const el = document.getElementById(typingId);
+    if (el) { el.querySelector('.chat-message-bubble').innerHTML = response.replace(/\n/g, '<br>'); el.querySelector('.chat-message-bubble').style = ''; }
+    container.scrollTop = container.scrollHeight;
+  }, 600 + Math.random() * 800);
+}
+
+function sendSupervisorMessage() {
+  const dest = document.getElementById('msgDestinatario');
+  const subj = document.getElementById('msgAssunto');
+  const body = document.getElementById('msgCorpo');
+  if (!dest || !subj || !body || !subj.value.trim() || !body.value.trim()) return;
+  MOCK.supervisorMessages.unshift({
+    id: Date.now(),
+    from: 'Ana Souza (Supervisora)',
+    to: dest.value,
+    date: new Date().toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    subject: subj.value.trim(),
+    body: body.value.trim(),
+    read: false
+  });
+  subj.value = '';
+  body.value = '';
+  const feedback = document.getElementById('msgFeedback');
+  if (feedback) {
+    feedback.innerHTML = `<div class="badge badge-success" style="padding:8px 16px;font-size:13px">✅ Mensagem enviada com sucesso para ${dest.value}!</div>`;
+    setTimeout(() => { feedback.innerHTML = ''; }, 3000);
+  }
+}
+
+function renderAdminAI() {
+  const adminSuggestions = [
+    'Quem não fez o treinamento?',
+    'Quantos concluíram?',
+    'Enviar lembrete para pendentes',
+    'Relatório de conclusão'
+  ];
+
+  const destOptions = MOCK.adminUsers.map(u => `<option value="${u.name}">${u.name} (${u.role})</option>`).join('');
+
+  return `
+    <div class="page-header">
+      <h1 class="page-title">Assistente Administrativo</h1>
+      <p class="page-description">Agente IA para gestão de treinamentos e comunicação com colaboradores</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div class="chat-container animate-fade-in" style="height:500px">
+          <div class="chat-header">
+            <div class="chat-header-avatar">🤖</div>
+            <div class="chat-header-info">
+              <h3>Assistente Admin</h3>
+              <p>Online</p>
+            </div>
+          </div>
+          <div class="chat-messages" id="adminChatMessages">
+            <div class="chat-message bot">
+              <div class="chat-message-avatar">🤖</div>
+              <div class="chat-message-bubble">Olá Ana! Sou seu assistente administrativo. Posso ajudar com:<br><br>• Listar quem não fez o treinamento<br>• Resumo de conclusão<br>• Enviar lembretes para pendentes<br>• Relatórios e prazos<br><br>O que precisa?</div>
+            </div>
+          </div>
+          <div class="chat-suggestions">${adminSuggestions.map(s => `<button class="chat-suggestion" onclick="document.getElementById('adminChatInput').value='${s}';sendAdminChat()">${s}</button>`).join('')}</div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="adminChatInput" placeholder="Pergunte sobre os treinamentos..." rows="1"></textarea>
+            <button class="chat-send-btn" onclick="sendAdminChat()">${icons.send}</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card animate-fade-in" style="margin-bottom:20px">
+          <h3 style="font-size:16px;font-weight:600;margin-bottom:20px">📩 Enviar Mensagem ao Colaborador</h3>
+          <div class="form-group">
+            <label class="form-label">Destinatário</label>
+            <select class="form-input" id="msgDestinatario">
+              <option value="Todos">Todos os colaboradores</option>
+              ${destOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Assunto</label>
+            <input type="text" class="form-input" id="msgAssunto" placeholder="Ex: Treinamento NR-6 pendente">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mensagem</label>
+            <textarea class="form-input" id="msgCorpo" placeholder="Escreva a mensagem..." style="min-height:120px"></textarea>
+          </div>
+          <div id="msgFeedback" style="margin-bottom:12px"></div>
+          <div class="flex justify-end gap-2">
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('msgAssunto').value='Treinamento NR-6 pendente';document.getElementById('msgCorpo').value='Prezado(a) colaborador(a), identificamos que o treinamento NR-6 — Equipamentos de Proteção Individual ainda não foi concluído. O prazo final é 15/07/2026. Por favor, acesse a plataforma e conclua o quanto antes.'">📝 Modelo Padrão</button>
+            <button class="btn btn-primary" onclick="sendSupervisorMessage()">📩 Enviar</button>
+          </div>
+        </div>
+
+        <div class="card animate-fade-in">
+          <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Mensagens Enviadas</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto" id="sentMessagesList">
+            ${MOCK.supervisorMessages.map(m => `
+              <div style="padding:10px 12px;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px">
+                <div class="flex justify-between"><span style="font-weight:500">Para: ${m.to}</span><span style="color:var(--text-tertiary);font-size:11px">${m.date}</span></div>
+                <div style="color:var(--text-secondary);margin-top:2px">${m.subject}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---- SUPERVISION (Aluno) ----
+function renderSupervision() {
+  const messages = MOCK.supervisorMessages;
+  const unread = messages.filter(m => !m.read).length;
+
+  const messageCards = messages.length > 0 ? messages.map((m, i) => `
+    <div class="card animate-fade-in stagger-${(i % 4) + 1}" style="margin-bottom:12px;${!m.read ? 'border-left:3px solid var(--jde-gold)' : ''}">
+      <div class="flex justify-between items-center" style="margin-bottom:8px">
+        <div class="flex items-center gap-2">
+          <div class="sidebar-avatar" style="width:28px;height:28px;font-size:10px">AS</div>
+          <span style="font-size:13px;font-weight:600">${m.from}</span>
+          ${!m.read ? '<span class="badge badge-warning" style="font-size:10px">Nova</span>' : ''}
+        </div>
+        <span style="font-size:12px;color:var(--text-tertiary)">${m.date}</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">${m.subject}</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">${m.body}</div>
+      ${!m.read ? `<button class="btn btn-ghost btn-sm" style="margin-top:8px;font-size:12px" onclick="MOCK.supervisorMessages[${i}].read=true;render()">✓ Marcar como lida</button>` : ''}
+    </div>
+  `).join('') : `
+    <div class="empty-state">
+      <div class="empty-state-icon">📭</div>
+      <h3>Nenhuma mensagem</h3>
+      <p>Você não tem mensagens da supervisão no momento.</p>
+    </div>
+  `;
+
+  return `
+    <div class="page-header flex justify-between items-center">
+      <div>
+        <h1 class="page-title">Supervisão</h1>
+        <p class="page-description">Mensagens e orientações do seu supervisor</p>
+      </div>
+      ${unread > 0 ? `<span class="badge badge-warning" style="font-size:13px;padding:6px 14px">${unread} mensagem(ns) não lida(s)</span>` : '<span class="badge badge-success">Tudo em dia ✓</span>'}
+    </div>
+
+    ${messageCards}
   `;
 }
 
