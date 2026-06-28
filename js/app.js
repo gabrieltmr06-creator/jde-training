@@ -606,12 +606,9 @@ const icons = {
 // ---- Navigation Config ----
 const studentNav = [
   { section: 'Principal' },
-  { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-  { id: 'trainings', label: 'Treinamentos', icon: '📚', badge: '3' },
+  { id: 'trainings', label: 'Treinamentos', icon: '📚', badge: '1' },
   { id: 'certificates', label: 'Certificados', icon: '🏆' },
   { id: 'chatbot', label: 'Chat IA', icon: '🤖' },
-  { section: 'Conta' },
-  { id: 'attendance', label: 'Lista de Presença', icon: '📋' },
 ];
 
 const adminNav = [
@@ -725,7 +722,7 @@ function renderLoginPage() {
 function bindLoginEvents() {
   document.getElementById('loginForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    navigate('dashboard');
+    navigate('trainings');
   });
 }
 
@@ -865,7 +862,7 @@ function bindAppEvents() {
   document.querySelectorAll('.sidebar-mode-btn').forEach(el => {
     el.addEventListener('click', () => {
       appMode = el.dataset.mode;
-      currentPage = appMode === 'admin' ? 'admin-dashboard' : 'dashboard';
+      currentPage = appMode === 'admin' ? 'admin-dashboard' : 'trainings';
       render();
     });
   });
