@@ -219,12 +219,17 @@ function generateCode() {
   return chars[Math.floor(Math.random() * chars.length)] + chars[Math.floor(Math.random() * chars.length)];
 }
 
-function scheduleNextPopup() {
+function scheduleNextPopup(isFirst) {
   if (popupScheduled) return;
-  const delay = (Math.random() * 120 + 60) * 1000; // 1~3 min aleatório
+  const delay = isFirst
+    ? (Math.random() * 10 + 10) * 1000  // primeiro: 10~20s
+    : (Math.random() * 40 + 20) * 1000; // demais: 20~60s
   popupTimer = setTimeout(() => {
     popupScheduled = false;
-    triggerPopup();
+    const video = document.getElementById('trainingVideo');
+    if (video && !video.paused && !video.ended) {
+      triggerPopup();
+    }
   }, delay);
   popupScheduled = true;
 }
@@ -350,7 +355,7 @@ function closePopupAndResume() {
   videoElement = document.getElementById('trainingVideo');
   if (videoElement) {
     videoElement.play();
-    scheduleNextPopup();
+    scheduleNextPopup(false);
   }
   updatePopupStats();
 }
@@ -368,10 +373,15 @@ function updatePopupStats() {
 
 function initVideoPopups() {
   clearPopupSchedule();
+  popupTotal = 0;
+  popupCorrect = 0;
+  popupIncorrect = 0;
   const video = document.getElementById('trainingVideo');
   if (!video) return;
+  let firstPlay = true;
   video.addEventListener('play', () => {
-    scheduleNextPopup();
+    scheduleNextPopup(firstPlay);
+    firstPlay = false;
   });
   video.addEventListener('pause', () => {
     if (!popupVisible) clearPopupSchedule();
