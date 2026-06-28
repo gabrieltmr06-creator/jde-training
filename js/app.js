@@ -852,7 +852,7 @@ function renderPage() {
     'admin-trainings': renderAdminTrainings,
     'admin-users': renderAdminUsers,
     'admin-questions': renderAdminQuestions,
-    'admin-certificates': renderCertificates,
+    'admin-certificates': renderAdminCertificates,
     'admin-reports': renderAdminReports,
     'admin-attendance': renderAttendance,
     'admin-lgpd': renderAdminLGPD,
@@ -2105,6 +2105,62 @@ function renderAdminLGPD() {
       </div>
     </div>
   `;
+}
+
+// ---- ADMIN CERTIFICATES (Cards por colaborador) ----
+function renderAdminCertificates() {
+  const usersWithCerts = MOCK.adminUsers.filter(u => u.status === 'active' && u.trainings >= 1);
+  const usersWithout = MOCK.adminUsers.filter(u => u.status !== 'active' || u.trainings < 1);
+
+  const certCards = usersWithCerts.map((u, i) => {
+    const initials = u.name.split(' ').map(n => n[0]).join('');
+    const hash = (Math.random().toString(36).substring(2, 8) + '-' + Math.random().toString(36).substring(2, 6)).toUpperCase();
+    const nota = Math.floor(80 + Math.random() * 18);
+    const dataConc = `${Math.floor(18 + Math.random() * 8)}/06/2026`;
+    return `
+      <div class="card animate-fade-in stagger-${(i % 4) + 1}" style="padding:20px">
+        <div class="flex items-center gap-3" style="margin-bottom:16px">
+          <div class="sidebar-avatar" style="width:42px;height:42px;font-size:14px">${initials}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600">${u.name}</div>
+            <div style="font-size:12px;color:var(--text-tertiary)">${u.role} · ${u.email}</div>
+          </div>
+          <span class="badge badge-success">Certificado ✓</span>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--jde-gold);margin-bottom:8px">🏆 NR-6 — Equipamentos de Proteção Individual</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+            <div><span style="color:var(--text-tertiary)">Conclusão:</span> <strong>${dataConc}</strong></div>
+            <div><span style="color:var(--text-tertiary)">Nota:</span> <strong style="color:var(--accent-success)">${nota}%</strong></div>
+            <div><span style="color:var(--text-tertiary)">Carga Horária:</span> <strong>3h 00min</strong></div>
+            <div><span style="color:var(--text-tertiary)">Validade:</span> <strong>${dataConc.replace('2026', '2027')}</strong></div>
+          </div>
+        </div>
+        <div class="flex justify-between items-center">
+          <code style="font-size:10px;color:var(--text-tertiary);background:var(--bg-tertiary);padding:3px 8px;border-radius:4px">Hash: ${hash}</code>
+          <button class="btn btn-ghost btn-sm" style="font-size:12px">${icons.eye} Ver certificado</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const pendingRows = usersWithout.map(u => `
+    <div class="flex items-center gap-3" style="padding:10px 0;border-bottom:1px solid var(--border-secondary)">
+      <div class="sidebar-avatar" style="width:32px;height:32px;font-size:11px">${u.name.split(' ').map(n => n[0]).join('')}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500">${u.name}</div>
+        <div style="font-size:11px;color:var(--text-tertiary)">${u.role}</div>
+      </div>
+      <span class="badge badge-danger">Sem certificado</span>
+    </div>
+  `).join('');
+
+  let html = '<div class="page-header flex justify-between items-center"><div><h1 class="page-title">Certificados por Colaborador</h1><p class="page-description">Visualize os certificados emitidos para cada colaborador ativo</p></div><div class="flex gap-2"><span class="badge badge-success" style="padding:6px 14px;font-size:13px">' + usersWithCerts.length + ' certificado(s)</span><span class="badge badge-danger" style="padding:6px 14px;font-size:13px">' + usersWithout.length + ' pendente(s)</span></div></div>';
+  html += '<div class="grid-2" style="margin-bottom:28px">' + certCards + '</div>';
+  if (usersWithout.length > 0) {
+    html += '<div class="card animate-fade-in"><h3 style="font-size:15px;font-weight:600;margin-bottom:12px">⏳ Colaboradores sem Certificado</h3>' + pendingRows + '</div>';
+  }
+  return html;
 }
 
 // ---- ADMIN AI ASSISTANT ----
